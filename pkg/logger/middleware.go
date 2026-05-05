@@ -88,12 +88,15 @@ func GenerateSpanId(parentSpanId string) string {
 // Middleware 链路追踪中间件
 func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		traceId := GenerateTraceId()
-		spanId := GenerateSpanId("")
-
+		traceId := c.GetHeader("X-Trace-Id")
+		if traceId == "" {
+			traceId = GenerateTraceId()
+			c.Writer.Header().Set("X-Trace-Id", traceId)
+		}
 		c.Set("traceId", traceId)
+
+		spanId := GenerateSpanId("")
 		c.Set("spanId", spanId)
-		c.Writer.Header().Set("X-Trace-Id", traceId)
 		c.Writer.Header().Set("X-Span-Id", spanId)
 		c.Next()
 	}

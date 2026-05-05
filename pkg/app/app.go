@@ -9,22 +9,18 @@ import (
 	"gota/pkg/logger"
 	"gota/pkg/middleware"
 	"gota/pkg/template/multi"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
-
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-}
 
 type App struct {
 	*gin.Engine
@@ -52,7 +48,7 @@ func (t *App) Run(addr ...string) {
 		install(t.Engine, address)
 	}
 
-	t.Engine.Use(middleware.ResponseHandler(), logger.Middleware(), middleware.Session(), middleware.Cors())
+	t.Engine.Use(gin.Logger(), gin.Recovery(), middleware.ResponseHandler(), logger.Middleware(), middleware.Session(), middleware.Cors())
 
 	//设置html模板
 	rs := map[string]string{}
@@ -82,12 +78,12 @@ func (t *App) Run(addr ...string) {
 
 	_ = t.Engine.SetTrustedProxies([]string{host[0]})
 
-	fmt.Println(fmt.Sprintf(`%s server running for the %s:%d process at:
+	fmt.Println(fmt.Sprintf(`%s server running for the %s:%d process[%s] at:
 
 	➜  Local:   http://%s/
 	➜  Docs:    http://%s/swagger.json
 
-start gin %s...`, gin.Mode(), caller, line-1, address, address, t.Config.AppNamespace))
+start gin %s...`, gin.Mode(), caller, line-1, strconv.Itoa(os.Getpid()), address, address, t.Config.AppNamespace))
 
 	logger.Record(nil, slog.LevelInfo, fmt.Sprintf("HTTP Server listening at %s", host[1]))
 

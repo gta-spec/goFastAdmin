@@ -6,132 +6,225 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/natefinch/lumberjack/v3"
 )
 
-// LogHandler 模拟 Logback 的 PatternLayout
-type LogHandler struct {
-	slog.Handler
-	writer     io.Writer
-	callerSkip int
-	addSource  bool
+var (
+	wd string
+)
+
+func init() {
+	wd, _ = os.Getwd()
 }
 
-type Option struct {
-	callerSkip  int
-	writer      io.Writer
-	AddSource   bool
-	Level       slog.Leveler
-	ReplaceAttr func(groups []string, a slog.Attr) slog.Attr
-}
+const (
+	green   = "\033[97;42m"
+	white   = "\033[90;47m"
+	yellow  = "\033[90;43m"
+	red     = "\033[97;41m"
+	blue    = "\033[97;44m"
+	magenta = "\033[97;45m"
+	cyan    = "\033[97;46m"
+	reset   = "\033[0m"
+)
 
-func NewLogger(option *Option) *slog.Logger {
-	return slog.New(&LogHandler{
-		Handler: slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level:       option.Level,
-			ReplaceAttr: option.ReplaceAttr,
-		}),
-		addSource:  option.AddSource,
-		callerSkip: option.callerSkip,
-	})
-}
+var defaultLogFormatter = func(cfg Config, ctx context.Context, r slog.Record) error {
+	levelColor := LevelColor(r.Level)
 
-// Handle 核心格式化逻辑
-func (h *LogHandler) Handle(ctx context.Context, r slog.Record) error {
-	// 1. %d{yy-MM-dd HH:mm:ss.SSS}
-	timeStr := r.Time.Format(time.DateTime + ".000")
-
-	// 2. %-5level (左对齐5位)
-	level := fmt.Sprintf("%-5s", strings.ToUpper(r.Level.String()))
-
-	// 3. ${PID:- } (进程号，无则空)
-	pid := strconv.Itoa(os.Getpid())
-
-	// 4. [%X{traceId}/%X{spanId}] (从 Context 提取)
-	var mdc []string
+	var traceId string
+	var spanId string
 	if ctx != nil {
 		if tid := ctx.Value("traceId"); tid != nil {
-			if tidStr, ok := tid.(string); ok {
-				mdc = append(mdc, tidStr)
-			}
+			traceId, _ = tid.(string)
 		}
 		if sid := ctx.Value("spanId"); sid != nil {
-			if sidStr, ok := sid.(string); ok {
-				mdc = append(mdc, sidStr)
-			}
+			spanId, _ = sid.(string)
 		}
 	}
-	mdcStr := fmt.Sprintf("[%s]", strings.Join(mdc, "/"))
 
-	// 5. [%thread] (Goroutine ID 模拟线程名)
-	threadStr := fmt.Sprintf("[goroutine-%s]", getGoroutineID())
-
-	// 6. %logger{36} (取源码包名.类名/函数名，截断36字符)
-	loggerName := source(h.callerSkip)
-
-	// 7. %msg (日志内容)
-	msg := r.Message
-
-	// 8. 处理结构化属性 (attrs)
-	var attrsStr string
-	if r.NumAttrs() > 0 {
-		var attrs []string
-		r.Attrs(func(a slog.Attr) bool {
-			attrs = append(attrs, fmt.Sprintf("%s=%v", a.Key, a.Value))
-			return true
-		})
-		attrsStr = " { " + strings.Join(attrs, ", ") + " }"
+	// 获取一层调用栈信息
+	var source string
+	if cfg.addSource {
+		caller := Source(cfg.callerSkip)
+		source = fmt.Sprintf("%s:%d", caller.File, caller.Line)
 	}
 
-	// 9. 拼接最终日志行
-	line := fmt.Sprintf("%s %s %s --- %s %s %s : %s%s\n", timeStr, level, pid, mdcStr, threadStr, loggerName, msg, attrsStr)
+	var attrs string
+	if r.NumAttrs() > 0 {
+		var arr []string
+		r.Attrs(func(a slog.Attr) bool {
+			//bytes, err := json.MarshalIndent(a.Value.Any(), "", "\t")
+			//if err == nil {
+			//	fmt.Println(string(bytes))
+			//}
+			arr = append(arr, fmt.Sprintf("%s=%v", a.Key, a.Value))
+			return true
+		})
+		attrs = strings.Join(arr, " ")
+	}
 
-	_, err := os.Stdout.WriteString(line)
+	var err error
+	for _, wri := range cfg.writer {
+		level := strings.ToUpper(r.Level.String())
+		time := r.Time.Format(time.DateTime + ".000")
+		switch wri.(type) {
+		case *lumberjack.Roller:
+		default:
+			level = fmt.Sprintf("%s %-5s %s|", levelColor, level, reset)
+			if traceId != "" {
+				traceId = fmt.Sprintf("%s %-30s %s|", magenta, traceId, reset)
+			}
+			if spanId != "" {
+				spanId = fmt.Sprintf("%s %-5s %s|", blue, spanId, reset)
+			}
+			if source != "" {
+				source = fmt.Sprintf("%s %s %s", yellow, source, reset)
+			}
+		}
+		_, err = fmt.Fprint(wri, fmt.Sprintf("[GIN] %v |%s%s%s %s \n%s %s\n",
+			time,
+			level,
+			traceId,
+			spanId,
+			source,
+			r.Message,
+			attrs,
+		))
+	}
 	return err
 }
 
-// WithAttrs 必选继承方法
-func (h *LogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &LogHandler{
-		Handler:    h.Handler.WithAttrs(attrs),
-		writer:     h.writer,
-		callerSkip: h.callerSkip,
-		addSource:  h.addSource,
-	}
-}
-
-func (h *LogHandler) WithGroup(name string) slog.Handler {
-	return &LogHandler{
-		Handler:    h.Handler.WithGroup(name),
-		writer:     h.writer,
-		callerSkip: h.callerSkip,
-		addSource:  h.addSource,
-	}
-}
-
-// 获取 Goroutine ID (模拟线程名)
-func getGoroutineID() string {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	fields := strings.Fields(string(buf[:n]))
-	if len(fields) >= 2 {
-		return fields[1]
-	}
-	return "0"
-}
-
-// 获取源码位置，模拟 %logger
-func source(skip int) string {
-	// 使用 runtime.Callers 手动获取调用栈
-	pcs := make([]uintptr, 10)
-	n := runtime.Callers(5+skip, pcs)
+// Source 返回日志事件的事件源
+func Source(skip int) *slog.Source {
+	var pcs [1]uintptr
+	n := runtime.Callers(skip+6, pcs[:])
 	if n == 0 {
-		return ""
+		return nil
 	}
-	frames := runtime.CallersFrames(pcs[:n])
-	frame, _ := frames.Next()
-	return frame.Function
+
+	fs := runtime.CallersFrames(pcs[:n])
+	f, _ := fs.Next()
+	file, _ := filepath.Rel(wd, f.File)
+	return &slog.Source{
+		Function: f.Function,
+		File:     filepath.ToSlash(file),
+		Line:     f.Line,
+	}
+}
+
+type Log struct {
+	slog.Handler
+	config Config
+}
+
+func (h *Log) Handle(ctx context.Context, r slog.Record) error {
+	if h.config.formatter != nil {
+		return h.config.formatter(h.config, ctx, r) // 使用自定义格式化器
+	}
+	return defaultLogFormatter(h.config, ctx, r)
+}
+
+func (h *Log) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &Log{Handler: h.Handler.WithAttrs(attrs)}
+}
+
+func (h *Log) WithGroup(name string) slog.Handler {
+	return &Log{Handler: h.Handler.WithGroup(name)}
+}
+
+type Config struct {
+	callerSkip  int
+	writer      []io.Writer
+	addSource   bool
+	level       slog.Leveler
+	replaceAttr func(groups []string, a slog.Attr) slog.Attr
+	formatter   func(Config, context.Context, slog.Record) error
+}
+
+// LevelColor is the ANSI color for level
+func LevelColor(level slog.Level) string {
+	switch level {
+	case slog.LevelDebug:
+		return blue
+	case slog.LevelInfo:
+		return green
+	case slog.LevelWarn:
+		return yellow
+	case slog.LevelError:
+		return red
+	default:
+		return reset
+	}
+}
+
+// ResetColor resets all escape attributes.
+func (c *Config) ResetColor() string {
+	return reset
+}
+
+type Option func(*Config)
+
+func WithCallerSkip(skip int) Option {
+	return func(c *Config) {
+		c.callerSkip = skip
+	}
+}
+
+func WithWriter(w ...io.Writer) Option {
+	return func(c *Config) {
+		c.writer = w
+	}
+}
+
+func WithAddSource(add bool) Option {
+	return func(c *Config) {
+		c.addSource = add
+	}
+}
+
+func WithLevel(level slog.Leveler) Option {
+	return func(c *Config) {
+		c.level = level
+	}
+}
+
+func WithReplaceAttr(fn func(groups []string, a slog.Attr) slog.Attr) Option {
+	return func(c *Config) {
+		c.replaceAttr = fn
+	}
+}
+
+func WithFormatter(fn func(Config, context.Context, slog.Record) error) Option {
+	return func(c *Config) {
+		c.formatter = fn
+	}
+}
+
+func New(opts ...Option) *slog.Logger {
+	c := &Config{
+		callerSkip:  0,
+		writer:      []io.Writer{os.Stdout},
+		addSource:   true,
+		level:       slog.LevelInfo,
+		replaceAttr: nil,
+		formatter:   defaultLogFormatter,
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return slog.New(&Log{
+		Handler: slog.NewTextHandler(nil, &slog.HandlerOptions{
+			AddSource:   c.addSource,
+			Level:       c.level,
+			ReplaceAttr: c.replaceAttr,
+		}),
+		config: *c,
+	})
 }
