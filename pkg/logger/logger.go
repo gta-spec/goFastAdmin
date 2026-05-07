@@ -7,19 +7,20 @@ import (
 	"os"
 	"time"
 
-	"github.com/natefinch/lumberjack/v3"
+	"gota/pkg/logger/rotate"
 )
 
 var Logger *slog.Logger
-var roller *lumberjack.Roller
+var roller *rotate.Roller
 
 func init() {
-	roller, err := lumberjack.NewRoller(
+	roller, err := rotate.NewRoller(
 		"runtime/log/%Y-%m-%d/out.log",
 		200*1024*1024, // 最大两百兆
-		&lumberjack.Options{
+		&rotate.Options{
 			MaxBackups: 10,
 			MaxAge:     30 * 24 * time.Hour, // 30 days
+			LocalTime:  true,
 			Compress:   false,
 		},
 	)

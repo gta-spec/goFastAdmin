@@ -1,7 +1,7 @@
 package logger
 
 import (
-	context "context"
+	"context"
 	"log/slog"
 	"testing"
 )

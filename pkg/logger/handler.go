@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/natefinch/lumberjack/v3"
+	"gota/pkg/logger/rotate"
 )
 
 var (
@@ -70,20 +70,18 @@ var defaultLogFormatter = func(cfg Config, ctx context.Context, r slog.Record) e
 
 	var err error
 	for _, wri := range cfg.writer {
-		level := strings.ToUpper(r.Level.String())
+		var level string
 		time := r.Time.Format(time.DateTime + ".000")
 		switch wri.(type) {
-		case *lumberjack.Roller:
+		case *rotate.Roller:
+			level = fmt.Sprintf(" %-5s |", strings.ToUpper(r.Level.String()))
 		default:
-			level = fmt.Sprintf("%s %-5s %s|", levelColor, level, reset)
+			level = fmt.Sprintf("%s %-5s %s|", levelColor, strings.ToUpper(r.Level.String()), reset)
 			if traceId != "" {
 				traceId = fmt.Sprintf("%s %-30s %s|", magenta, traceId, reset)
 			}
 			if spanId != "" {
 				spanId = fmt.Sprintf("%s %-5s %s|", blue, spanId, reset)
-			}
-			if source != "" {
-				source = fmt.Sprintf("%s %s %s", yellow, source, reset)
 			}
 		}
 		_, err = fmt.Fprint(wri, fmt.Sprintf("[GIN] %v |%s%s%s %s \n%s %s\n",
