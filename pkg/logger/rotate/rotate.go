@@ -5,19 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
+type Reason string
+
 const (
-	backupTimeFormat = "2006-01-02T15-04-05.000"
-	compressSuffix   = ".gz"
-	defaultMaxSize   = 100
+	backupTimeFormat        = "2006-01-02T15-04-05.000"
+	compressSuffix          = ".gz"
+	defaultMaxSize          = 100
+	ReasonSize       Reason = "size"
+	ReasonTime       Reason = "time"
 )
 
 type constError string
@@ -70,10 +74,43 @@ func NewRoller(filename string, maxSize int64, opt *Options) (*Roller, error) {
 	if filename == "" {
 		return nil, errors.New("filename cannot be empty")
 	}
-	r := &Roller{
-		filename: filename,
-		maxSize:  maxSize,
+
+	filename = filepath.FromSlash(filename)
+	// 移除文件后缀名 , 只要在创建文件的时候加上
+	ext := filepath.Ext(filename)
+
+	var baseDir string
+
+	// 匹配第一个 strftime 之前的路径
+	loc := strftimePattern.FindStringIndex(filename)
+	if loc == nil {
+		baseDir = filepath.Dir(filename)
+	} else {
+		prefix := filename[:loc[0]]
+		baseDir = filepath.Dir(prefix)
 	}
+
+	r := &Roller{
+		filename: strings.TrimSuffix(filename, ext),
+		maxSize:  maxSize,
+		ext:      ext,
+		baseDir:  baseDir,
+	}
+
+	// 判断filename是否随时间轮转
+	if isStrftimeFormat(r.filename) {
+		r.strftime = strftime(r.filename)
+		t := currentTime()
+		if !r.localTime {
+			t = t.UTC()
+		}
+		r.filename = t.Format(r.strftime)
+	}
+
+	if oldLogFiles, err := r.oldLogFiles(); err == nil && len(oldLogFiles) > 0 {
+		r.filename = strings.TrimSuffix(oldLogFiles[0].name, r.ext)
+	}
+
 	if opt != nil {
 		r.maxAge = opt.MaxAge
 		r.maxBackups = opt.MaxBackups
@@ -147,6 +184,10 @@ type Roller struct {
 
 	millCh    chan bool
 	startMill sync.Once
+
+	strftime string
+	baseDir  string //第一个 %时间之前的路径
+	ext      string
 }
 
 var (
@@ -172,8 +213,20 @@ func (r *Roller) Write(p []byte) (n int, err error) {
 	defer r.mu.Unlock()
 	r.mu.Lock()
 
+	// 按照时间轮转
+	//if r.strftime != "" {
+	//	now := currentTime().Format(r.strftime)
+	//	filename := r.file.Name()
+	//	if filename != now {
+	//		if err := r.rotate(ReasonTime); err != nil {
+	//			return 0, err
+	//		}
+	//	}
+	//}
+
+	// 按照文件大小轮转
 	if r.size+writeLen > r.maxSize {
-		if err := r.rotate(); err != nil {
+		if err := r.rotate(ReasonSize); err != nil {
 			return 0, err
 		}
 	}
@@ -209,15 +262,31 @@ func (r *Roller) close() error {
 func (r *Roller) Rotate() error {
 	defer r.mu.Unlock()
 	r.mu.Lock()
-	return r.rotate()
+	return r.rotate(ReasonSize)
 }
 
 // rotate closes the current file, moves it aside with a timestamp in the name,
 // (if it exists), opens a new file with the original filename, and then runs
 // post-rotation processing and removar.
-func (r *Roller) rotate() error {
+func (r *Roller) rotate(reason Reason) error {
 	if err := r.close(); err != nil {
 		return err
+	}
+	switch reason {
+	case ReasonTime:
+		fmt.Println("======time轮转====")
+		t := currentTime()
+		if !r.localTime {
+			t = t.UTC()
+		}
+		r.filename = t.Format(r.strftime)
+	case ReasonSize:
+		dir, base, index := pathInfo(r.filename)
+		if index == 0 {
+			baseFilename := filepath.Join(dir, base)
+			_ = os.Rename(fmt.Sprintf("%s%s", baseFilename, r.ext), fmt.Sprintf("%s.0%s", baseFilename, r.ext))
+		}
+		r.filename = fmt.Sprintf("%s.%d", filepath.Join(dir, base), index+1)
 	}
 	if err := r.openNew(); err != nil {
 		return err
@@ -229,22 +298,18 @@ func (r *Roller) rotate() error {
 // openNew opens a new log file for writing, moving any old log file out of the
 // way.  This methods assumes the file has already been closed.
 func (r *Roller) openNew() error {
-	err := os.MkdirAll(r.dir(), 0755)
+	name := r.newFilename() + r.ext
+	err := os.MkdirAll(filepath.Dir(name), 0755)
+
 	if err != nil {
 		return fmt.Errorf("can't make directories for new logfile: %w", err)
 	}
 
-	name := r.newFilename()
 	mode := os.FileMode(0600)
 	info, err := osStat(name)
 	if err == nil {
 		// Copy the mode off the old logfile.
 		mode = info.Mode()
-		// move the existing file
-		newname := backupName(name, r.localTime)
-		if err := os.Rename(name, newname); err != nil {
-			return fmt.Errorf("can't rename log file: %w", err)
-		}
 
 		// this is a no-op anywhere but linux
 		if err := chown(name, info); err != nil {
@@ -264,23 +329,6 @@ func (r *Roller) openNew() error {
 	return nil
 }
 
-// backupName creates a new filename from the given name, inserting a timestamp
-// between the filename and the extension, using the local time if requested
-// (otherwise UTC).
-func backupName(name string, local bool) string {
-	dir := filepath.Dir(name)
-	filename := filepath.Base(name)
-	ext := filepath.Ext(filename)
-	prefix := filename[:len(filename)-len(ext)]
-	t := currentTime()
-	if !local {
-		t = t.UTC()
-	}
-
-	timestamp := t.Format(backupTimeFormat)
-	return filepath.Join(dir, fmt.Sprintf("%s-%s%s", prefix, timestamp, ext))
-}
-
 // openExistingOrNew opens the logfile if it exists and if the current write
 // would not put it over MaxSize.  If there is no such file or the write would
 // put it over the MaxSize, a new file is created.
@@ -292,12 +340,17 @@ func (r *Roller) openExistingOrNew(writeLen int64) error {
 	if os.IsNotExist(err) {
 		return r.openNew()
 	}
+
 	if err != nil {
 		return fmt.Errorf("error getting log file info: %w", err)
 	}
 
+	//if r.strftime != "" && r.filename != currentTime().Format(r.strftime) {
+	//	return r.rotate(ReasonTime)
+	//}
+
 	if info.Size()+writeLen >= r.maxSize {
-		return r.rotate()
+		return r.rotate(ReasonSize)
 	}
 
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
@@ -318,6 +371,30 @@ func (r *Roller) newFilename() string {
 	}
 	name := filepath.Base(os.Args[0]) + "-lumberjack.log"
 	return filepath.Join(os.TempDir(), name)
+}
+
+// pathInfo (已经移除后缀)解析日志文件路径信息，提取目录、文件名、前缀、扩展名和轮转索引。
+//
+// 返回值说明：
+//
+//	 例如:    "runtime/log/2026-05-15.1"
+//		dir:     文件所在目录路径（如 "/runtime/log"）
+//		base:    完整文件名（含扩展名和索引，如 "2026-05-15"）
+//		index:   轮转索引号（无索引时为 0，如 1）
+func pathInfo(filename string) (string, string, int) {
+	var index int
+	dir := filepath.Dir(filename)
+	base := filepath.Base(filename)
+
+	iExt := filepath.Ext(base)
+
+	if iExt != "" {
+		if i, err := strconv.Atoi(iExt[1:]); err == nil {
+			base = strings.TrimSuffix(base, iExt)
+			index = i
+		}
+	}
+	return dir, base, index
 }
 
 // millRunOnce performs compression and removal of stale log files.
@@ -420,28 +497,28 @@ func (r *Roller) mill() {
 // oldLogFiles returns the list of backup log files stored in the same
 // directory as the current log file, sorted by ModTime
 func (r *Roller) oldLogFiles() ([]logInfo, error) {
-	files, err := ioutil.ReadDir(r.dir())
+	var logFiles []logInfo
+
+	err := walkDir(r.baseDir, func(path string, entry os.DirEntry) {
+		var timestamp time.Time
+		fn := filepath.Join(path, entry.Name())
+		d, n, i := pathInfo(fn)
+		if r.strftime != "" {
+			t, err := time.Parse(r.strftime, filepath.Join(d, n))
+			if err == nil {
+				timestamp = t
+			}
+		}
+		info, _ := entry.Info()
+		logFiles = append(logFiles, logInfo{fn, i, timestamp, info})
+	})
+
 	if err != nil {
-		return nil, fmt.Errorf("can't read log file directory: %s", err)
+		return logFiles, nil
 	}
-	logFiles := []logInfo{}
 
-	prefix, ext := r.prefixAndExt()
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-		if t, err := r.timeFromName(f.Name(), prefix, ext); err == nil {
-			logFiles = append(logFiles, logInfo{t, f})
-			continue
-		}
-		if t, err := r.timeFromName(f.Name(), prefix, ext+compressSuffix); err == nil {
-			logFiles = append(logFiles, logInfo{t, f})
-			continue
-		}
-		// error parsing means that the suffix at the end was not generated
-		// by lumberjack, and therefore it's not a backup file.
+	if len(logFiles) == 0 {
+		return nil, fmt.Errorf("can't read log file directory: %w", err)
 	}
 
 	sort.Sort(byFormatTime(logFiles))
@@ -449,32 +526,26 @@ func (r *Roller) oldLogFiles() ([]logInfo, error) {
 	return logFiles, nil
 }
 
-// timeFromName extracts the formatted time from the filename by stripping off
-// the filename's prefix and extension. This prevents someone's filename from
-// confusing time.parse.
-func (r *Roller) timeFromName(filename, prefix, ext string) (time.Time, error) {
-	if !strings.HasPrefix(filename, prefix) {
-		return time.Time{}, errors.New("mismatched prefix")
+func walkDir(dir string, callback func(path string, entry os.DirEntry)) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
 	}
-	if !strings.HasSuffix(filename, ext) {
-		return time.Time{}, errors.New("mismatched extension")
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if err := walkDir(filepath.Join(dir, entry.Name()), callback); err != nil {
+				return err
+			}
+		} else {
+			callback(dir, entry)
+		}
 	}
-	ts := filename[len(prefix) : len(filename)-len(ext)]
-	return time.Parse(backupTimeFormat, ts)
+	return nil
 }
 
 // dir returns the directory for the current filename.
 func (r *Roller) dir() string {
 	return filepath.Dir(r.newFilename())
-}
-
-// prefixAndExt returns the filename part and extension part from the Logger's
-// filename.
-func (r *Roller) prefixAndExt() (prefix, ext string) {
-	filename := filepath.Base(r.newFilename())
-	ext = filepath.Ext(filename)
-	prefix = filename[:len(filename)-len(ext)] + "-"
-	return prefix, ext
 }
 
 // compressLogFile compresses the given log file, removing the
@@ -535,6 +606,8 @@ func compressLogFile(src, dst string) (err error) {
 // logInfo is a convenience struct to return the filename and its embedded
 // timestamp.
 type logInfo struct {
+	name      string
+	index     int
 	timestamp time.Time
 	os.FileInfo
 }
@@ -543,6 +616,9 @@ type logInfo struct {
 type byFormatTime []logInfo
 
 func (b byFormatTime) Less(i, j int) bool {
+	if b[i].timestamp.Equal(b[j].timestamp) {
+		return b[i].index > b[j].index
+	}
 	return b[i].timestamp.After(b[j].timestamp)
 }
 

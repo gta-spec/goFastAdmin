@@ -13,9 +13,9 @@ import (
 var Logger *slog.Logger
 var roller *rotate.Roller
 
-func init() {
+func Init() {
 	roller, err := rotate.NewRoller(
-		"runtime/log/%Y-%m-%d/out.log",
+		"runtime/log/%Y-%m-%d.log",
 		200*1024*1024, // 最大两百兆
 		&rotate.Options{
 			MaxBackups: 10,
