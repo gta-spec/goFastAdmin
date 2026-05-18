@@ -40,7 +40,7 @@ func NewLinkedHashMap[K comparable, V any](entries []Entry[K, V], opts ...Option
 	}
 
 	for _, entry := range entries {
-		m.Set(entry.Key, entry.Val)
+		m.Put(entry.Key, entry.Val)
 	}
 
 	// 应用所有选项
@@ -51,8 +51,8 @@ func NewLinkedHashMap[K comparable, V any](entries []Entry[K, V], opts ...Option
 	return m
 }
 
-// Set 对应 Java put()，JS set()
-func (m *LinkedHashMap[K, V]) Set(key K, val V) {
+// Put 对应 Java put()，JS set()
+func (m *LinkedHashMap[K, V]) Put(key K, val V) {
 	// 已存在key：更新值；accessOrder=true则移到队尾
 	if node, ok := m.data[key]; ok {
 		node.val = val
@@ -95,8 +95,8 @@ func (m *LinkedHashMap[K, V]) Remove(key K) bool {
 	return true
 }
 
-// Has 对应 Java containsKey()，JS has()
-func (m *LinkedHashMap[K, V]) Has(key K) bool {
+// ContainsKey 对应 Java containsKey()，JS has()
+func (m *LinkedHashMap[K, V]) ContainsKey(key K) bool {
 	_, ok := m.data[key]
 	return ok
 }
@@ -113,12 +113,25 @@ func (m *LinkedHashMap[K, V]) Clear() {
 	m.size = 0
 }
 
-// Entries 返回一个迭代器，支持 range 遍历（Go 1.23+ Seq2）
-func (m *LinkedHashMap[K, V]) Entries() iter.Seq2[K, V] {
+// Seq2 返回一个迭代器，支持 range 遍历（Go 1.23+ Seq2）
+func (m *LinkedHashMap[K, V]) Seq2() iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		cur := m.head
 		for cur != nil {
 			if !yield(cur.key, cur.val) {
+				return
+			}
+			cur = cur.next
+		}
+	}
+}
+
+// Seq 返回键的迭代器（Go 1.23+ Seq）
+func (m *LinkedHashMap[K, V]) Seq() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		cur := m.head
+		for cur != nil {
+			if !yield(cur.val) {
 				return
 			}
 			cur = cur.next
@@ -141,15 +154,7 @@ func (m *LinkedHashMap[K, V]) Keys() iter.Seq[K] {
 
 // Values 返回值的迭代器（Go 1.23+ Seq）
 func (m *LinkedHashMap[K, V]) Values() iter.Seq[V] {
-	return func(yield func(V) bool) {
-		cur := m.head
-		for cur != nil {
-			if !yield(cur.val) {
-				return
-			}
-			cur = cur.next
-		}
-	}
+	return m.Seq()
 }
 
 // 内部：尾部添加节点
