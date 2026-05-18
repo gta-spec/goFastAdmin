@@ -10,9 +10,8 @@ import (
 )
 
 func TestNewRollerTime(t *testing.T) {
-	filename := "runtime/log/%Y-%m/%d.log"
-	roller, err := rotate.NewRoller(filename, int64(512), &rotate.Options{
-		MaxBackups: 50,
+	roller, err := rotate.NewRoller("runtime/log/%Y-%m/%d.log", int64(512), &rotate.Options{
+		MaxBackups: 16,
 		MaxAge:     24 * time.Hour,
 		LocalTime:  true,
 		Compress:   false,

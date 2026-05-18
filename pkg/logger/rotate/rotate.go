@@ -274,19 +274,18 @@ func (r *Roller) rotate(reason Reason) error {
 	}
 	switch reason {
 	case ReasonTime:
-		fmt.Println("======time轮转====")
 		t := currentTime()
 		if !r.localTime {
 			t = t.UTC()
 		}
 		r.filename = t.Format(r.strftime)
 	case ReasonSize:
-		dir, base, index := pathInfo(r.filename)
-		if index == 0 {
-			baseFilename := filepath.Join(dir, base)
+		d, b, i := pathInfo(r.filename)
+		if i == 0 {
+			baseFilename := filepath.Join(d, b)
 			_ = os.Rename(fmt.Sprintf("%s%s", baseFilename, r.ext), fmt.Sprintf("%s.0%s", baseFilename, r.ext))
 		}
-		r.filename = fmt.Sprintf("%s.%d", filepath.Join(dir, base), index+1)
+		r.filename = fmt.Sprintf("%s.%d", filepath.Join(d, b), i+1)
 	}
 	if err := r.openNew(); err != nil {
 		return err
@@ -335,7 +334,7 @@ func (r *Roller) openNew() error {
 func (r *Roller) openExistingOrNew(writeLen int64) error {
 	r.mill()
 
-	filename := r.newFilename()
+	filename := r.newFilename() + r.ext
 	info, err := osStat(filename)
 	if os.IsNotExist(err) {
 		return r.openNew()
@@ -345,9 +344,13 @@ func (r *Roller) openExistingOrNew(writeLen int64) error {
 		return fmt.Errorf("error getting log file info: %w", err)
 	}
 
-	//if r.strftime != "" && r.filename != currentTime().Format(r.strftime) {
-	//	return r.rotate(ReasonTime)
-	//}
+	if r.strftime != "" {
+		d, b, _ := pathInfo(r.filename)
+		bf := filepath.Join(d, b)
+		if bf != currentTime().Format(r.strftime) {
+			return r.rotate(ReasonTime)
+		}
+	}
 
 	if info.Size()+writeLen >= r.maxSize {
 		return r.rotate(ReasonSize)
@@ -438,7 +441,7 @@ func (r *Roller) millRunOnce() error {
 
 		var remaining []logInfo
 		for _, f := range files {
-			if f.timestamp.Before(cutoff) {
+			if f.ModTime().Before(cutoff) {
 				remove = append(remove, f)
 			} else {
 				remaining = append(remaining, f)
@@ -501,10 +504,10 @@ func (r *Roller) oldLogFiles() ([]logInfo, error) {
 
 	err := walkDir(r.baseDir, func(path string, entry os.DirEntry) {
 		var timestamp time.Time
-		fn := filepath.Join(path, entry.Name())
-		d, n, i := pathInfo(fn)
+		fn := strings.TrimSuffix(filepath.Join(path, entry.Name()), r.ext)
+		d, b, i := pathInfo(fn)
 		if r.strftime != "" {
-			t, err := time.Parse(r.strftime, filepath.Join(d, n))
+			t, err := time.Parse(r.strftime, filepath.Join(d, b))
 			if err == nil {
 				timestamp = t
 			}

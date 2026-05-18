@@ -8,11 +8,9 @@ import (
 )
 
 const (
-	ResponseTypeJSON   = "json"
-	ResponseTypeXML    = "xml"
-	ResponseTypeJSONP  = "jsonp"
-	DefaultCodeSuccess = 1
-	DefaultCodeError   = 0
+	ResponseTypeJSON  = "json"
+	ResponseTypeXML   = "xml"
+	ResponseTypeJSONP = "jsonp"
 )
 
 type Jump struct {
@@ -62,8 +60,7 @@ func (t *Result) Response(c *gin.Context, tmpl string) {
 // throws HttpResponseException
 func (j *Jump) Success(c *gin.Context, args ...any) {
 	result := defaultResult(args)
-	defaultCode := DefaultCodeSuccess
-	result.Code = &defaultCode
+	result.Code = new(1)
 	result.Response(c, Config.Viper().DispatchSuccessTmpl)
 	panic(struct{}{})
 }
@@ -84,8 +81,7 @@ func (j *Jump) Success(c *gin.Context, args ...any) {
 // throws HttpResponseException
 func (j *Jump) Error(c *gin.Context, args ...any) {
 	result := defaultResult(args...)
-	defaultCode := DefaultCodeError
-	result.Code = &defaultCode
+	result.Code = new(0)
 	result.Response(c, Config.Viper().DispatchErrorTmpl)
 	panic(struct{}{})
 }

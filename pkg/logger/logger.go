@@ -2,12 +2,11 @@ package logger
 
 import (
 	"context"
+	"gota/pkg/logger/rotate"
 	"io"
 	"log/slog"
 	"os"
 	"time"
-
-	"gota/pkg/logger/rotate"
 )
 
 var Logger *slog.Logger
