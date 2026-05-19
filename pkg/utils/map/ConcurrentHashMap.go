@@ -169,9 +169,12 @@ func (m *ConcurrentHashMap[K, V]) Seq() iter.Seq[V] {
 		})
 	}
 }
+func (m *ConcurrentHashMap[K, V]) EntrySet() iter.Seq2[K, V] {
+	return m.Seq2()
+}
 
-// Keys 返回键的迭代器
-func (m *ConcurrentHashMap[K, V]) Keys() iter.Seq[K] {
+// KeySet 返回键的迭代器
+func (m *ConcurrentHashMap[K, V]) KeySet() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		m.data.Range(func(key, value interface{}) bool {
 			return yield(key.(K))

@@ -5,6 +5,36 @@ import (
 	"reflect"
 )
 
+// Map 定义哈希映射的完整行为，Go标准命名
+type Map[K comparable, V any] interface {
+	Put(k K, v V) V
+	Get(k K) (V, bool)
+	Remove(k K) V
+	RemoveMatch(k K, oldVal V) bool
+
+	Size() int
+	IsEmpty() bool
+	Clear()
+	PutAll(other Map[K, V])
+
+	// GetOrDefault Java8+ 便捷方法
+	GetOrDefault(k K, def V) V
+	PutIfAbsent(k K, v V) V
+	Replace(k K, newVal V) (V, bool)
+	ReplaceMatch(k K, old, new V) bool
+
+	// Seq2 Go 1.23+ 标准迭代器（替代 entrySet/keySet/values）返回所有键值对的集合,同 EntrySet()
+	Seq2() iter.Seq2[K, V]
+	// Seq 返回所有值的集合,同 Values()
+	Seq() iter.Seq[V]
+	// Values 返回所有值的集合
+	Values() iter.Seq[V]
+	// KeySet 返回所有键的集合
+	KeySet() iter.Seq[K]
+	// EntrySet 返回所有键值对的集合
+	EntrySet() iter.Seq2[K, V]
+}
+
 // HashMap 基于 Go 原生 map 的实现
 type HashMap[K comparable, V any] map[K]V
 
@@ -148,9 +178,12 @@ func (m HashMap[K, V]) Seq() iter.Seq[V] {
 		}
 	}
 }
+func (m HashMap[K, V]) EntrySet() iter.Seq2[K, V] {
+	return m.Seq2()
+}
 
-// Keys 返回键的迭代器
-func (m HashMap[K, V]) Keys() iter.Seq[K] {
+// KeySet 返回键的迭代器
+func (m HashMap[K, V]) KeySet() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		for k := range m {
 			if !yield(k) {

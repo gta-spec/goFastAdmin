@@ -225,9 +225,12 @@ func (m *LinkedHashMap[K, V]) Seq() iter.Seq[V] {
 		}
 	}
 }
+func (m *LinkedHashMap[K, V]) EntrySet() iter.Seq2[K, V] {
+	return m.Seq2()
+}
 
-// Keys 返回键的迭代器（Go 1.23+ Seq）
-func (m *LinkedHashMap[K, V]) Keys() iter.Seq[K] {
+// KeySet 返回键的迭代器（Go 1.23+ Seq）
+func (m *LinkedHashMap[K, V]) KeySet() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		cur := m.head
 		for cur != nil {

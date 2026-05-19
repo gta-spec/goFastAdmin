@@ -14,8 +14,18 @@ type TreeMap[K comparable, V any] struct {
 	lessFn func(a, b K) bool
 }
 
+// TreeMapOption TreeMap 的配置选项
+type TreeMapOption[K comparable, V any] func(*TreeMap[K, V])
+
+// WithComparator 设置自定义比较器
+func WithComparator[K comparable, V any](less func(a, b K) bool) TreeMapOption[K, V] {
+	return func(m *TreeMap[K, V]) {
+		m.lessFn = less
+	}
+}
+
 // NewTreeMap 创建一个新的 TreeMap，使用默认比较器
-func NewTreeMap[K cmp.Ordered, V any](entries []Entry[K, V]) *TreeMap[K, V] {
+func NewTreeMap[K cmp.Ordered, V any](entries []Entry[K, V], opts ...TreeMapOption[K, V]) *TreeMap[K, V] {
 	m := &TreeMap[K, V]{
 		data: make(map[K]V),
 		lessFn: func(a, b K) bool {
@@ -23,18 +33,9 @@ func NewTreeMap[K cmp.Ordered, V any](entries []Entry[K, V]) *TreeMap[K, V] {
 		},
 	}
 
-	for _, entry := range entries {
-		m.Put(entry.Key, entry.Val)
-	}
-
-	return m
-}
-
-// NewTreeMapWithComparator 创建一个新的 TreeMap，使用自定义比较器
-func NewTreeMapWithComparator[K comparable, V any](entries []Entry[K, V], less func(a, b K) bool) *TreeMap[K, V] {
-	m := &TreeMap[K, V]{
-		data:   make(map[K]V),
-		lessFn: less,
+	// 应用所有选项
+	for _, opt := range opts {
+		opt(m)
 	}
 
 	for _, entry := range entries {
@@ -61,9 +62,9 @@ func (m *TreeMap[K, V]) Put(k K, v V) V {
 		})
 		m.keys = slices.Insert(m.keys, idx, k)
 		return v
-	} else {
-		m.data[k] = v
 	}
+
+	m.data[k] = v
 	return oldVal
 }
 
@@ -220,9 +221,12 @@ func (m *TreeMap[K, V]) Seq() iter.Seq[V] {
 		}
 	}
 }
+func (m *TreeMap[K, V]) EntrySet() iter.Seq2[K, V] {
+	return m.Seq2()
+}
 
-// Keys 返回键的迭代器（按排序顺序）
-func (m *TreeMap[K, V]) Keys() iter.Seq[K] {
+// KeySet 返回键的迭代器（按排序顺序）
+func (m *TreeMap[K, V]) KeySet() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		for _, k := range m.keys {
 			if !yield(k) {
