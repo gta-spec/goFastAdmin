@@ -38,7 +38,7 @@ const docTemplate = `{
                     "200": {
                         "description": "发送成功",
                         "schema": {
-                            "$ref": "#/definitions/common.Result"
+                            "$ref": "#/definitions/controller.Result"
                         }
                     }
                 }
@@ -66,7 +66,7 @@ const docTemplate = `{
                     "200": {
                         "description": "发送成功",
                         "schema": {
-                            "$ref": "#/definitions/common.Result"
+                            "$ref": "#/definitions/controller.Result"
                         }
                     }
                 }
@@ -94,7 +94,7 @@ const docTemplate = `{
                     "200": {
                         "description": "发送成功",
                         "schema": {
-                            "$ref": "#/definitions/common.Result"
+                            "$ref": "#/definitions/controller.Result"
                         }
                     }
                 }
@@ -122,7 +122,7 @@ const docTemplate = `{
                     "200": {
                         "description": "发送成功",
                         "schema": {
-                            "$ref": "#/definitions/common.Result"
+                            "$ref": "#/definitions/controller.Result"
                         }
                     }
                 }
@@ -130,7 +130,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "common.Result": {
+        "controller.Result": {
             "type": "object",
             "properties": {
                 "code": {
@@ -140,7 +140,10 @@ const docTemplate = `{
                 "msg": {
                     "type": "string"
                 },
-                "time": {
+                "url": {
+                    "type": "string"
+                },
+                "wait": {
                     "type": "integer"
                 }
             }

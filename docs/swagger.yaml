@@ -1,13 +1,15 @@
 basePath: /
 definitions:
-  common.Result:
+  controller.Result:
     properties:
       code:
         type: integer
       data: {}
       msg:
         type: string
-      time:
+      url:
+        type: string
+      wait:
         type: integer
     type: object
 externalDocs:
@@ -32,7 +34,7 @@ paths:
         "200":
           description: 发送成功
           schema:
-            $ref: '#/definitions/common.Result'
+            $ref: '#/definitions/controller.Result'
       security:
       - ApiKeyAuth: []
       summary: 测试方法
@@ -49,7 +51,7 @@ paths:
         "200":
           description: 发送成功
           schema:
-            $ref: '#/definitions/common.Result'
+            $ref: '#/definitions/controller.Result'
       security:
       - ApiKeyAuth: []
       summary: 无需登录的接口
@@ -66,7 +68,7 @@ paths:
         "200":
           description: 发送成功
           schema:
-            $ref: '#/definitions/common.Result'
+            $ref: '#/definitions/controller.Result'
       security:
       - ApiKeyAuth: []
       summary: 需要登录的接口
@@ -83,7 +85,7 @@ paths:
         "200":
           description: 发送成功
           schema:
-            $ref: '#/definitions/common.Result'
+            $ref: '#/definitions/controller.Result'
       security:
       - ApiKeyAuth: []
       summary: 需要登录且需要验证有相应组的权限

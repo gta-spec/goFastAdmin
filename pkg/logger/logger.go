@@ -5,8 +5,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"runtime"
-	"sync"
 	"time"
 
 	"github.com/gta-spec/utils/slog"
@@ -83,18 +81,4 @@ func Write(ctx context.Context, level slog.Level, msg string, args ...any) {
 // WriteAttrs 把保存在内存中的日志信息写入
 func WriteAttrs(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
 	Logger.LogAttrs(ctx, level, msg, attrs...)
-}
-
-// 预分配堆栈缓冲区
-var stackPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, 1<<20) // 1MB 缓冲区
-	},
-}
-
-func getStack(skipFrames int) string {
-	stack := stackPool.Get().([]byte)
-	defer stackPool.Put(stack)
-	n := runtime.Stack(stack, false)
-	return string(stack[:n])
 }
