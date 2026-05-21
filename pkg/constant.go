@@ -3,10 +3,13 @@ package pkg
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
 )
 
 var (
-	rootPath string
+	EnvGinMode = gin.DebugMode
+	rootPath   string
 )
 
 const (

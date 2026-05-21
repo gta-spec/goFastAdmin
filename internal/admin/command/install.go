@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"gota/pkg"
-	"gota/pkg/database"
 	"gota/pkg/utils"
 	"gota/pkg/utils/yaml"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 	"gota/pkg/utils/ini"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gta-spec/utils/sql"
 )
 
 type Install struct {
@@ -154,7 +154,7 @@ func (i Install) installation(mysqlHostname, mysqlHostport, mysqlDatabase, mysql
 	}
 
 	// 执行SQL语句
-	err = database.Exec(db, sqlStr)
+	err = _sql.Exec(db, sqlStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute SQL: %v", err)
 	}

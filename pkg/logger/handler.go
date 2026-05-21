@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"gota/pkg/logger/rotate"
+	"github.com/gta-spec/utils/slog"
 )
 
 var (
@@ -73,7 +73,7 @@ var defaultLogFormatter = func(cfg Config, ctx context.Context, r slog.Record) e
 		var level string
 		time := r.Time.Format(time.DateTime + ".000")
 		switch wri.(type) {
-		case *rotate.Roller:
+		case *_slog.Roller:
 			level = fmt.Sprintf(" %-5s |", strings.ToUpper(r.Level.String()))
 		default:
 			level = fmt.Sprintf("%s %-5s %s|", levelColor, strings.ToUpper(r.Level.String()), reset)

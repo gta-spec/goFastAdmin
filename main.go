@@ -11,10 +11,7 @@ import (
 	"gota/pkg/database/redis"
 	_ "gota/pkg/i18n"
 	"gota/pkg/logger"
-	"os"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 // @title OpenAPI
@@ -33,7 +30,6 @@ import (
 // @name Authorization
 // @description API 认证方式：在请求头中添加 Authorization 字段，值为 Bearer + 空格 + token
 func main() {
-	os.Setenv("APP_ENV", gin.ReleaseMode)
 	defer logger.Close()
 	defer database.Close()
 	defer redis.Close()

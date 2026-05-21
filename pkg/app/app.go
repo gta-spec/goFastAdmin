@@ -29,7 +29,7 @@ type App struct {
 }
 
 func New(c *config.Config) *App {
-	gin.SetMode(c.Mode())
+	gin.SetMode(pkg.EnvGinMode)
 	app := &App{
 		Engine: gin.New(),
 		Config: c,
