@@ -1,3 +1,5 @@
+//go:generate swag init -o ./pkg/docs
+
 package main
 
 import (
@@ -37,7 +39,7 @@ func main() {
 	_ = config.SetGlobalConfigFile("pkg/config/config.yaml")
 	cfgInst := config.Viper()
 	// 加载次要配置
-	config.LoadConfigGlob(strings.Join([]string{pkg.APP_PATH, "extra", "*.yaml"}, "/"))
+	config.LoadConfigGlob(strings.Join([]string{pkg.AppPath, "extra", "*.yaml"}, "/"))
 
 	application := app.New(cfgInst)
 

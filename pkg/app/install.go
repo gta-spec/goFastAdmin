@@ -19,7 +19,7 @@ import (
 
 // isInstall 判断是否安装过了
 func isInstall() bool {
-	filename := pkg.INSTALL_PATH + "install.lock"
+	filename := pkg.InstallPath + "install.lock"
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return false
 	}
@@ -29,7 +29,7 @@ func isInstall() bool {
 // install 首次进入,启动系统安装
 func install(engine *gin.Engine, address string) {
 	// 加载模板
-	engine.LoadHTMLFiles(pkg.INSTALL_PATH + "install.html")
+	engine.LoadHTMLFiles(pkg.InstallPath + "install.html")
 	// 注册安装路由
 	engine.Any("/install", command.Install{MinGoVersion: "1.23"}.Index)
 
@@ -47,7 +47,7 @@ func install(engine *gin.Engine, address string) {
 	}
 
 	// 监听 install.lock 文件的创建
-	err := utils.FileListener(pkg.INSTALL_PATH, func(event fsnotify.Event, done func()) {
+	err := utils.FileListener(pkg.InstallPath, func(event fsnotify.Event, done func()) {
 		if (event.Op&fsnotify.Create == fsnotify.Create) && filepath.Base(event.Name) == "install.lock" {
 			done()
 			close(complete)

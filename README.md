@@ -4,7 +4,7 @@
 
 ## 推荐 IDE 配置
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)（并禁用 Vetur）+ [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin)。
+[GoLand](https://www.jetbrains.com.cn/go/)  + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin)。
 
 ## 自定义配置
 
@@ -13,23 +13,28 @@
 ## 生成 API 文档
 
 ```sh
-swag i
+go install github.com/swaggo/swag/cmd/swag@latest
 
-## 项目设置nit
+swag init -o ./pkg/docs
 ```
 
 ### 清理依赖缓存
 
 ```sh
 go clean -modcache
+
 rm go.sum
+
 go get github.com/gta-spec/utils@latest
+
 go mod tidy
 ```
 
 ### 开发环境运行（热重载）
 
 ```sh
+go generate
+
 go run .
 ```
 

@@ -2,10 +2,10 @@ package app
 
 import (
 	"fmt"
-	_ "gota/docs"
 	"gota/pkg"
 	"gota/pkg/app/route"
 	"gota/pkg/config"
+	_ "gota/pkg/docs"
 	"gota/pkg/logger"
 	"gota/pkg/middleware"
 	"gota/pkg/template/multi"
@@ -98,7 +98,7 @@ func router(engine *gin.Engine) {
 		return engine.Group(modulename), modulename
 	})
 	engine.GET("swagger.json", func(c *gin.Context) {
-		filePath := "./docs/swagger.json"
+		filePath := "./pkg/docs/swagger.json"
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Swagger file not found"})
 			return

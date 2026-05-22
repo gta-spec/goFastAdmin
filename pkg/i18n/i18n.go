@@ -28,7 +28,7 @@ func init() {
 
 	root.LoadDir(filepath.Join(filepath.Dir(filename), "lang"))
 
-	matches, _ := filepath.Glob(pkg.APP_PATH + fmt.Sprintf("*%slang", pkg.DS))
+	matches, _ := filepath.Glob(pkg.AppPath + fmt.Sprintf("*%slang", pkg.DS))
 	for _, match := range matches {
 		moduleName := strings.Split(match, pkg.DS)[1]
 		module := &Translate{
