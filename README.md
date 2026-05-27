@@ -18,6 +18,13 @@ go install github.com/swaggo/swag/cmd/swag@latest
 swag init -o ./pkg/docs
 ```
 
+### 本地项目关联
+```sh
+在项目所在的目录
+go work init ./gota
+go work use ./utils
+```
+
 ### 清理依赖缓存
 
 ```sh

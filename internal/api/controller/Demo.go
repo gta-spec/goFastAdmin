@@ -86,3 +86,17 @@ func (t Demo) Test3(c *gin.Context) {
 		"action": "test3",
 	})
 }
+
+// Test4
+// @Router /demo/test4 [get]
+func (t Demo) Test4(c *gin.Context) {
+	t.Success(c, "返回成功", gin.H{
+		"action": "test3",
+	})
+}
+
+// Test5
+// @Router /demo/test4 [get]
+func Test5(c *gin.Context) {
+	c.JSON(200, "ok")
+}

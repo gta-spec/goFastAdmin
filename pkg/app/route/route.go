@@ -55,7 +55,7 @@ func Register(Struct any) {
 
 	_, file, _, _ := runtime.Caller(1)
 
-	relPath, _ := filepath.Rel(pkg.RootPath(), file)
+	relPath, _ := filepath.Rel(pkg.RootPath, file)
 
 	controller := Controller{
 		File: relPath,

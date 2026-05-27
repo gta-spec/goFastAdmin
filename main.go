@@ -1,3 +1,4 @@
+//go:generate go run cmd/tools/gen_route.go
 //go:generate swag init -o ./pkg/docs
 
 package main

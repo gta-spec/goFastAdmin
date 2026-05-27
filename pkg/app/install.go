@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"gota/internal/admin/command"
 	"gota/pkg"
-	"gota/pkg/utils"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
+	"github.com/gta-spec/utils/file"
 )
 
 // isInstall 判断是否安装过了
@@ -31,28 +30,20 @@ func install(engine *gin.Engine, address string) {
 	// 加载模板
 	engine.LoadHTMLFiles(pkg.InstallPath + "install.html")
 	// 注册安装路由
-	engine.Any("/install", command.Install{MinGoVersion: "1.23"}.Index)
+	engine.Match([]string{"GET", "POST"}, "/install", new(command.Install).Index)
 
 	engine.NoRoute(func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/install")
 	})
-
-	// 创建完成channel
-	complete := make(chan struct{})
-
 	// 创建HTTP服务器实例
 	srv := &http.Server{
 		Addr:    address,
 		Handler: engine,
 	}
 
-	// 监听 install.lock 文件的创建
-	err := utils.FileListener(pkg.InstallPath, func(event fsnotify.Event, done func()) {
-		if (event.Op&fsnotify.Create == fsnotify.Create) && filepath.Base(event.Name) == "install.lock" {
-			done()
-			close(complete)
-		}
-	})
+	// 监听文件创建
+	complete := make(chan fsnotify.Event)
+	err := _file.Watcher(pkg.InstallPath+"install.lock", complete, fsnotify.Create|fsnotify.Rename)
 
 	if err != nil {
 		log.Fatalf("File watcher error: %v", err)

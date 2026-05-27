@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"gota/pkg"
-	"gota/pkg/app/route"
 	"gota/pkg/config"
 	_ "gota/pkg/docs"
 	"gota/pkg/logger"
@@ -20,6 +19,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+
+	"gota/internal"
 )
 
 type App struct {
@@ -39,7 +40,7 @@ func New(c *config.Config) *App {
 
 func (t *App) Run(addr ...string) {
 	_, filename, line, _ := runtime.Caller(0)
-	caller := filepath.ToSlash(strings.TrimPrefix(filepath.FromSlash(filename), filepath.FromSlash(pkg.RootPath()+string(filepath.Separator))))
+	caller := filepath.ToSlash(strings.TrimPrefix(filepath.FromSlash(filename), filepath.FromSlash(pkg.RootPath+string(filepath.Separator))))
 
 	address := resolveAddress(addr)
 	host := strings.Split(address, ":")
@@ -73,8 +74,24 @@ func (t *App) Run(addr ...string) {
 
 	t.Engine.HTMLRender = render.Init()
 
+	t.Engine.NoRoute(func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/")
+	})
+	t.Engine.Static("/assets", "./public/assets")
+	t.Engine.StaticFile("/favicon.ico", "./assets/favicon.ico")
+	t.Engine.GET("swagger.json", func(c *gin.Context) {
+		filePath := "./pkg/docs/swagger.json"
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Swagger file not found"})
+			return
+		}
+		c.File(filePath)
+	})
+
+	internal.Router(t.Engine)
+
 	//设置路由
-	router(t.Engine)
+	//router(t.Engine)
 
 	_ = t.Engine.SetTrustedProxies([]string{host[0]})
 
@@ -89,23 +106,24 @@ start gin %s...`, gin.Mode(), caller, line-1, strconv.Itoa(os.Getpid()), address
 
 	t.Engine.Run(address)
 }
-func router(engine *gin.Engine) {
-	// 初始化静态资源
-	engine.Static("/assets", "./public/assets")
-	engine.StaticFile("/favicon.ico", "./assets/favicon.ico")
-	route.Build(engine, func(name string) (*gin.RouterGroup, string) {
-		modulename := strings.Split(name, pkg.DS)[1]
-		return engine.Group(modulename), modulename
-	})
-	engine.GET("swagger.json", func(c *gin.Context) {
-		filePath := "./pkg/docs/swagger.json"
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Swagger file not found"})
-			return
-		}
-		c.File(filePath)
-	})
-}
+
+//func router(engine *gin.Engine) {
+//	// 初始化静态资源
+//	engine.Static("/assets", "./public/assets")
+//	engine.StaticFile("/favicon.ico", "./assets/favicon.ico")
+//	route.Build(engine, func(name string) (*gin.RouterGroup, string) {
+//		modulename := strings.Split(name, pkg.DS)[1]
+//		return engine.Group(modulename), modulename
+//	})
+//	engine.GET("swagger.json", func(c *gin.Context) {
+//		filePath := "./pkg/docs/swagger.json"
+//		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+//			c.JSON(http.StatusNotFound, gin.H{"error": "Swagger file not found"})
+//			return
+//		}
+//		c.File(filePath)
+//	})
+//}
 
 func parseTplRoute(path string) string {
 	re := regexp.MustCompile(`^([^/]+)/view(/.*)?$`)

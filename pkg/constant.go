@@ -5,11 +5,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gta-spec/utils"
 )
 
 const (
@@ -24,23 +26,24 @@ var (
 	EnvGinMode = gin.DebugMode
 	MainPath   string
 	GoVersion  string
-	rootPath   string
+	RootPath   string
 )
 
 func init() {
-	rootPath, _ = os.Getwd()
+	RootPath, _ = os.Getwd()
 	info, ok := debug.ReadBuildInfo()
 	if ok {
-		MainPath = info.Main.Path
+		if info.Main.Path != "" {
+			MainPath = info.Main.Path
+		} else {
+			_, filename, _, _ := runtime.Caller(0)
+			MainPath = readModuleName(_utils.GoModFilepath(filepath.Dir(filename)))
+		}
 		GoVersion = info.GoVersion
 		if v, e := getMinVer(GoVersion); e == nil && v < supportMinGoVer {
 			log.Fatal(fmt.Sprintf("[ERROR] Now Gin requires Go 1.%d+.", supportMinGoVer))
 		}
 	}
-}
-
-func RootPath() string {
-	return rootPath
 }
 
 func getMinVer(v string) (uint64, error) {
@@ -50,4 +53,21 @@ func getMinVer(v string) (uint64, error) {
 		return strconv.ParseUint(v[first+1:], 10, 64)
 	}
 	return strconv.ParseUint(v[first+1:last], 10, 64)
+}
+
+func readModuleName(goModPath string) string {
+	file, err := os.ReadFile(goModPath)
+	if err != nil {
+		return ""
+	}
+
+	lines := strings.Split(string(file), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module "))
+		}
+	}
+
+	return ""
 }

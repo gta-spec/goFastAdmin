@@ -3,7 +3,6 @@ package controller
 import (
 	"gota/internal/common/controller"
 	"gota/pkg/app/route"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,8 +20,6 @@ type Index struct {
 	NoNeedRight []string
 }
 
-func (t *Index) Index() (gin.HandlerFunc, []string, []string) {
-	return func(c *gin.Context) {
-		t.View.Fetch(c)
-	}, []string{"index", "/"}, []string{http.MethodGet}
+func (t *Index) Index(c *gin.Context) {
+	//t.View.Fetch(c)
 }

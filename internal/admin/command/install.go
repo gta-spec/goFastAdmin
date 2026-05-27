@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -19,9 +18,7 @@ import (
 	"github.com/gta-spec/utils/sql"
 )
 
-type Install struct {
-	MinGoVersion string
-}
+type Install struct{}
 
 func (i Install) Index(c *gin.Context) {
 	installLockFile := pkg.InstallPath + "install.lock"
@@ -84,11 +81,6 @@ func (i Install) Index(c *gin.Context) {
  * 执行安装
  */
 func (i Install) installation(mysqlHostname, mysqlHostport, mysqlDatabase, mysqlUsername, mysqlPassword, mysqlPrefix, adminUsername, adminPassword, adminEmail, siteName string) (string, error) {
-	err := i.checkEnv()
-	if err != nil {
-		return "", err
-	}
-
 	// 修改后台入口
 	adminName := utils.RandomAlpha(10)
 
@@ -238,16 +230,6 @@ func (i Install) installation(mysqlHostname, mysqlHostport, mysqlDatabase, mysql
 	}
 
 	return adminName, nil
-}
-
-// 检测环境
-func (i Install) checkEnv() error {
-
-	if versionCompare(runtime.Version(), i.MinGoVersion) == -1 {
-		return fmt.Errorf("the current GO %s is too low, please use GO %s or higher", runtime.Version(), i.MinGoVersion)
-	}
-
-	return nil
 }
 
 // 比较Go版本的辅助函数
