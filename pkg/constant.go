@@ -37,7 +37,7 @@ func init() {
 			MainPath = info.Main.Path
 		} else {
 			_, filename, _, _ := runtime.Caller(0)
-			MainPath = readModuleName(_utils.GoModFilepath(filepath.Dir(filename)))
+			MainPath = readModuleName(utils.GoModFilepath(filepath.Dir(filename)))
 		}
 		GoVersion = info.GoVersion
 		if v, e := getMinVer(GoVersion); e == nil && v < supportMinGoVer {

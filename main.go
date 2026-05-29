@@ -1,4 +1,4 @@
-//go:generate go run cmd/tools/gen_route.go
+//go:generate go run pkg/cmd/tools/gen_route.go
 //go:generate swag init -o ./pkg/docs
 
 package main
@@ -21,13 +21,10 @@ import (
 // @version 1.0
 // @description Gota框架
 // @termsOfService https://www.swagger.io/terms/
-
 // @host 127.0.0.1:8080
 // @BasePath /
-
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://github.com/swaggo/swag/blob/master/README_zh-CN.md
-
 // @SecurityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization

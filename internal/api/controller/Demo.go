@@ -34,7 +34,7 @@ type Demo struct {
 // @Description 测试描述信息
 // @Tags demo
 // @Accept x-www-form-urlencoded
-// @Produce json
+// @Produce JSON
 // @Success 200 {object} Result "发送成功"
 // @Router /demo/test [post]
 // @Security ApiKeyAuth
@@ -47,7 +47,7 @@ func (t Demo) Test(c *gin.Context) {
 // @Description 无需登录的接口
 // @Tags demo
 // @Accept x-www-form-urlencoded
-// @Produce json
+// @Produce JSON
 // @Success 200 {object} Result "发送成功"
 // @Router /demo/test1 [post]
 // @Security ApiKeyAuth
@@ -62,7 +62,7 @@ func (t Demo) Test1(c *gin.Context) {
 // @Description 需要登录的接口
 // @Tags demo
 // @Accept x-www-form-urlencoded
-// @Produce json
+// @Produce JSON
 // @Success 200 {object} Result "发送成功"
 // @Router /demo/test2 [post]
 // @Security ApiKeyAuth
@@ -77,7 +77,7 @@ func (t Demo) Test2(c *gin.Context) {
 // @Description 需要登录且需要验证有相应组的权限
 // @Tags demo
 // @Accept x-www-form-urlencoded
-// @Produce json
+// @Produce JSON
 // @Success 200 {object} Result "发送成功"
 // @Router /demo/test3 [get]
 // @Security ApiKeyAuth

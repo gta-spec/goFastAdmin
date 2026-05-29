@@ -66,7 +66,7 @@ func Register(Struct any) {
 		HandlersFunc: []gin.HandlerFunc{},
 	}
 
-	props := _utils.GetStructProperty(Struct, "Alias", "Method", "NoNeedLogin", "NoNeedRight")
+	props := utils.GetStructProperty(Struct, "Alias", "Method", "NoNeedLogin", "NoNeedRight")
 
 	// 处理别名
 	if aliasAny, ok := props["Alias"]; ok {
@@ -97,7 +97,7 @@ func Register(Struct any) {
 		controller.HandlersFunc = append(controller.HandlersFunc, handler.BeforeAction())
 	}
 
-	for name, method := range _utils.GetStructMethods(Struct) {
+	for name, method := range utils.GetStructMethods(Struct) {
 		action := Action{
 			Name:   name,
 			Path:   []string{name},
@@ -124,9 +124,9 @@ func Build(e *gin.Engine, moduleGroup func(name string) (*gin.RouterGroup, strin
 		mRouterGroup, modulename := moduleGroup(controller.File)
 
 		if controller.Alias != "" {
-			cRouterGroup = mRouterGroup.Group(_utils.SnakeCase(controller.Alias))
+			cRouterGroup = mRouterGroup.Group(utils.SnakeCase(controller.Alias))
 		} else {
-			cRouterGroup = mRouterGroup.Group(_utils.SnakeCase(controller.Name))
+			cRouterGroup = mRouterGroup.Group(utils.SnakeCase(controller.Name))
 		}
 
 		chains = append(chains, controller.HandlersFunc...)
@@ -134,12 +134,12 @@ func Build(e *gin.Engine, moduleGroup func(name string) (*gin.RouterGroup, strin
 		for _, action := range controller.Actions {
 			for _, method := range action.Method {
 				for _, path := range action.Path {
-					path = filepath.ToSlash(_utils.SnakeCase(path))
+					path = filepath.ToSlash(utils.SnakeCase(path))
 					clonedChains := []gin.HandlerFunc{func(c *gin.Context) {
 						c.Set("startTime", time.Now().UnixMilli())
-						c.Set("modulename", _utils.SnakeCase(modulename))
-						c.Set("controllername", _utils.SnakeCase(controller.Name))
-						c.Set("actionname", _utils.SnakeCase(action.Name))
+						c.Set("modulename", utils.SnakeCase(modulename))
+						c.Set("controllername", utils.SnakeCase(controller.Name))
+						c.Set("actionname", utils.SnakeCase(action.Name))
 						c.Set("noNeedLogin", controller.NoNeedLogin)
 						c.Set("noNeedRight", controller.NoNeedRight)
 						c.Set("url", fmt.Sprintf("%s/%s/%s", c.GetString("modulename"), c.GetString("controllername"), c.GetString("actionname")))
@@ -151,7 +151,7 @@ func Build(e *gin.Engine, moduleGroup func(name string) (*gin.RouterGroup, strin
 					case strings.HasPrefix(path, "/"):
 						e.Handle(method, path, clonedChains...)
 					case strings.HasPrefix(path, "."):
-						e.Handle(method, filepath.ToSlash(filepath.Clean(filepath.Join(cRouterGroup.BasePath(), _utils.SnakeCase(path)))), clonedChains...)
+						e.Handle(method, filepath.ToSlash(filepath.Clean(filepath.Join(cRouterGroup.BasePath(), utils.SnakeCase(path)))), clonedChains...)
 					default:
 						cRouterGroup.Handle(method, path, clonedChains...)
 					}
