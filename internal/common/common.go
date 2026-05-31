@@ -3,8 +3,8 @@ package common
 import (
 	"errors"
 	"gota/internal/common/model"
-	"gota/pkg/database"
-	"gota/pkg/utils"
+	"gota/src/database"
+	"gota/src/utils"
 	"net/http"
 	"slices"
 	"time"

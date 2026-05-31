@@ -3,7 +3,7 @@ package i18n
 import (
 	"encoding/json"
 	"fmt"
-	"gota/pkg"
+	"gota/src"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -28,9 +28,9 @@ func init() {
 
 	root.LoadDir(filepath.Join(filepath.Dir(filename), "lang"))
 
-	matches, _ := filepath.Glob(pkg.AppPath + fmt.Sprintf("*%slang", pkg.DS))
+	matches, _ := filepath.Glob(src.AppPath + fmt.Sprintf("*%slang", src.DS))
 	for _, match := range matches {
-		moduleName := strings.Split(match, pkg.DS)[1]
+		moduleName := strings.Split(match, src.DS)[1]
 		module := &Translate{
 			Path:   moduleName,
 			Bundle: i18n.NewBundle(defaultLang),

@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	"gota/pkg/i18n"
-	"gota/pkg/utils"
+	"gota/src/i18n"
+	"gota/src/utils"
 	"html/template"
 	"net/url"
 	"strings"

@@ -2,7 +2,7 @@ package service
 
 import (
 	"gota/internal/index/model/dto"
-	"gota/pkg/database"
+	"gota/src/database"
 )
 
 type Site struct{}

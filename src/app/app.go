@@ -2,12 +2,12 @@ package app
 
 import (
 	"fmt"
-	"gota/pkg"
-	"gota/pkg/config"
-	_ "gota/pkg/docs"
-	"gota/pkg/logger"
-	"gota/pkg/middleware"
-	"gota/pkg/template/multi"
+	"gota/src"
+	"gota/src/config"
+	_ "gota/src/docs"
+	"gota/src/logger"
+	"gota/src/middleware"
+	"gota/src/template/multi"
 	"log/slog"
 	"net/http"
 	"os"
@@ -30,7 +30,7 @@ type App struct {
 }
 
 func New(c *config.Config) *App {
-	gin.SetMode(pkg.EnvGinMode)
+	gin.SetMode(src.EnvGinMode)
 	app := &App{
 		Engine: gin.New(),
 		Config: c,
@@ -40,7 +40,7 @@ func New(c *config.Config) *App {
 
 func (t *App) Run(addr ...string) {
 	_, filename, line, _ := runtime.Caller(0)
-	caller := filepath.ToSlash(strings.TrimPrefix(filepath.FromSlash(filename), filepath.FromSlash(pkg.RootPath+string(filepath.Separator))))
+	caller := filepath.ToSlash(strings.TrimPrefix(filepath.FromSlash(filename), filepath.FromSlash(src.RootPath+string(filepath.Separator))))
 
 	address := resolveAddress(addr)
 	host := strings.Split(address, ":")
@@ -80,7 +80,7 @@ func (t *App) Run(addr ...string) {
 	t.Engine.Static("/assets", "./public/assets")
 	t.Engine.StaticFile("/favicon.ico", "./assets/favicon.ico")
 	t.Engine.GET("swagger.json", func(c *gin.Context) {
-		filePath := "./pkg/docs/swagger.json"
+		filePath := "./src/docs/swagger.json"
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Swagger file not found"})
 			return

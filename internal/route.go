@@ -15,7 +15,6 @@ var (
 
 func Router(engine *gin.Engine) {
 	admin := engine.Group("admin")
-
 	{
 		fmt.Println(admin)
 	}

@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"gota/internal/common/model"
-	Config "gota/pkg/config"
-	"gota/pkg/database"
+	Config "gota/src/config"
+	"gota/src/database"
 	"hash"
 	"time"
 

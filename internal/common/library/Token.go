@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"gota/internal/common/library/token"
 	"gota/internal/common/library/token/driver"
-	Config "gota/pkg/config"
+	Config "gota/src/config"
 )
 
 var (

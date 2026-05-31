@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"gota/internal/admin/command"
-	"gota/pkg"
+	"gota/src"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +18,7 @@ import (
 
 // isInstall 判断是否安装过了
 func isInstall() bool {
-	filename := pkg.InstallPath + "install.lock"
+	filename := src.InstallPath + "install.lock"
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return false
 	}
@@ -28,7 +28,7 @@ func isInstall() bool {
 // install 首次进入,启动系统安装
 func install(engine *gin.Engine, address string) {
 	// 加载模板
-	engine.LoadHTMLFiles(pkg.InstallPath + "install.html")
+	engine.LoadHTMLFiles(src.InstallPath + "install.html")
 	// 注册安装路由
 	engine.Match([]string{"GET", "POST"}, "/install", new(command.Install).Index)
 
@@ -43,7 +43,7 @@ func install(engine *gin.Engine, address string) {
 
 	// 监听文件创建
 	complete := make(chan fsnotify.Event)
-	err := _file.Watcher(pkg.InstallPath+"install.lock", complete, fsnotify.Create|fsnotify.Rename)
+	err := _file.Watcher(src.InstallPath+"install.lock", complete, fsnotify.Create|fsnotify.Rename)
 
 	if err != nil {
 		log.Fatalf("File watcher error: %v", err)

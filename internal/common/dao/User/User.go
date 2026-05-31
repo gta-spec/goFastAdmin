@@ -2,7 +2,7 @@ package UserDao
 
 import (
 	"gota/internal/common/model"
-	"gota/pkg/database"
+	"gota/src/database"
 )
 
 func GetById(id uint) *model.User {

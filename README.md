@@ -15,7 +15,7 @@
 ```sh
 go install github.com/swaggo/swag/cmd/swag@latest
 
-swag init -o ./pkg/docs
+swag init -o ./src/docs
 ```
 
 ### 本地项目关联

@@ -2,7 +2,7 @@ package controller
 
 import (
 	"gota/internal/common/controller"
-	"gota/pkg/app/route"
+	"gota/src/app/route"
 
 	"github.com/gin-gonic/gin"
 )

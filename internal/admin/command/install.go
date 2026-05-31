@@ -3,16 +3,16 @@ package command
 import (
 	"database/sql"
 	"fmt"
-	"gota/pkg"
-	"gota/pkg/utils"
-	"gota/pkg/utils/yaml"
+	"gota/src"
+	"gota/src/utils"
+	"gota/src/utils/yaml"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"gota/pkg/utils/ini"
+	"gota/src/utils/ini"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gta-spec/utils/sql"
@@ -21,7 +21,7 @@ import (
 type Install struct{}
 
 func (i Install) Index(c *gin.Context) {
-	installLockFile := pkg.InstallPath + "install.lock"
+	installLockFile := src.InstallPath + "install.lock"
 	if _, err := os.Stat(installLockFile); !os.IsNotExist(err) {
 		c.String(http.StatusOK, fmt.Sprintf("The system has been installed. If you need to reinstall, please remove %s first", "install.lock"))
 		return
@@ -110,7 +110,7 @@ func (i Install) installation(mysqlHostname, mysqlHostport, mysqlDatabase, mysql
 		return "", fmt.Errorf("please input correct website")
 	}
 
-	sqlFile := pkg.InstallPath + "fastadmin.sql"
+	sqlFile := src.InstallPath + "fastadmin.sql"
 
 	if _, err := os.Stat(sqlFile); os.IsNotExist(err) {
 		return "", err
@@ -171,12 +171,12 @@ func (i Install) installation(mysqlHostname, mysqlHostport, mysqlDatabase, mysql
 
 	// ============================变更配置文件-start=================================
 
-	if y, err := yaml.Load(pkg.ConfPath + "ini.yaml"); err == nil {
+	if y, err := yaml.Load(src.ConfPath + "ini.yaml"); err == nil {
 		y.Set("token.key", utils.RandomAlnum(32))
 		y.Save()
 	}
 
-	if y, err := yaml.Load(pkg.AppPath + "extra/site.yaml"); err == nil {
+	if y, err := yaml.Load(src.AppPath + "extra/site.yaml"); err == nil {
 		y.Set("name", siteName)
 		y.Save()
 	}
@@ -223,7 +223,7 @@ func (i Install) installation(mysqlHostname, mysqlHostport, mysqlDatabase, mysql
 	_, _ = db.Exec(query, siteName)
 
 	// 创建install.lock文件 app install方法会检测到
-	installLockFile := pkg.InstallPath + "install.lock"
+	installLockFile := src.InstallPath + "install.lock"
 	err = os.WriteFile(installLockFile, []byte(adminName), 0644)
 	if err != nil {
 		return "", fmt.Errorf("the current permissions are insufficient to write the file %s", installLockFile)

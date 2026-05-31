@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"gota/pkg/config"
+	"gota/src/config"
 	"log"
 	"os"
 	"sync"
@@ -26,7 +26,7 @@ func Gorm(configs ...*Database) *gorm.DB {
 	once.Do(func() {
 		var cfg *Database
 		if len(configs) < 1 {
-			dbViper, err := config.SetConfigFile("database", "pkg/database/config.yaml")
+			dbViper, err := config.SetConfigFile("database", "src/database/config.yaml")
 			if err != nil {
 				log.Fatalf("Failed to load database configuration: %v", err)
 			}

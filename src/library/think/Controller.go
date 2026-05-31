@@ -1,7 +1,7 @@
 package think
 
 import (
-	"gota/pkg/library/traits/controller"
+	"gota/src/library/traits/controller"
 )
 
 type Controller struct {

@@ -2,7 +2,7 @@ package controller
 
 import (
 	"gota/internal/common/controller"
-	"gota/pkg/app/route"
+	"gota/src/app/route"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,9 +14,9 @@ func init() {
 	})
 }
 
-/*Demo
- * 示例接口
- */
+// Demo
+// 示例接口
+// @AutoController
 type Demo struct {
 	controller.Api
 	//如果$noNeedLogin为空表示所有接口都需要登录才能请求
@@ -98,5 +98,45 @@ func (t Demo) Test4(c *gin.Context) {
 // Test5
 // @Router /demo/test4 [get]
 func Test5(c *gin.Context) {
+	c.JSON(200, "ok")
+}
+
+// UserController1
+// @AutoController
+type UserController1 struct {
+	controller.Api
+	//如果$noNeedLogin为空表示所有接口都需要登录才能请求
+	//如果$noNeedRight为空表示所有接口都需要验证权限才能请求
+	//如果接口已经设置无需登录,那也就无需鉴权了
+	//
+	// 无需登录的接口,*表示全部
+	NoNeedLogin []string
+	// 无需鉴权的接口,*表示全部
+	NoNeedRight []string
+}
+
+// Index
+// @Router /index [get,post]
+func (t UserController1) Index(c *gin.Context) {
+	c.JSON(200, "ok")
+}
+
+// UserController
+// @Controller
+type UserController struct {
+	controller.Api
+	//如果$noNeedLogin为空表示所有接口都需要登录才能请求
+	//如果$noNeedRight为空表示所有接口都需要验证权限才能请求
+	//如果接口已经设置无需登录,那也就无需鉴权了
+	//
+	// 无需登录的接口,*表示全部
+	NoNeedLogin []string
+	// 无需鉴权的接口,*表示全部
+	NoNeedRight []string
+}
+
+// Index
+// @Router /index [get,post]
+func (t UserController) Index(c *gin.Context) {
 	c.JSON(200, "ok")
 }

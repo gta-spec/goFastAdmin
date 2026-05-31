@@ -1,7 +1,7 @@
 package controller
 
 import (
-	Config "gota/pkg/config"
+	Config "gota/src/config"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

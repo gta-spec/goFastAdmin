@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"gota/internal/common/controller"
 	"gota/internal/common/library/Auth"
-	"gota/pkg/app/route"
+	"gota/src/app/route"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

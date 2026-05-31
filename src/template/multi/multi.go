@@ -2,7 +2,7 @@ package multi
 
 import (
 	"fmt"
-	"gota/pkg/template/parse"
+	"gota/src/template/parse"
 	"html/template"
 	"io"
 	"io/fs"

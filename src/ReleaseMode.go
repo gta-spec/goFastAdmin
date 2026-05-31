@@ -1,6 +1,6 @@
 //go:build release
 
-package pkg
+package src
 
 import "github.com/gin-gonic/gin"
 

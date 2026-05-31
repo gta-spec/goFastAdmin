@@ -1,4 +1,4 @@
-package pkg
+package src
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ const (
 	supportMinGoVer = uint64(26)
 	DS              = string(filepath.Separator)
 	AppPath         = "internal/"
-	ConfPath        = "pkg/config/"
+	ConfPath        = "src/config/"
 	InstallPath     = "internal/admin/command/install/"
 )
 

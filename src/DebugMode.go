@@ -1,6 +1,6 @@
 //go:build debug
 
-package pkg
+package src
 
 import "github.com/gin-gonic/gin"
 
