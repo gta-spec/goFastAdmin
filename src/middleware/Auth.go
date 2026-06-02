@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	. "gota/internal/common"
+	. "gota/app/common"
 	"strings"
 
 	"github.com/gin-gonic/gin"

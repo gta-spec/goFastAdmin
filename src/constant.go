@@ -17,9 +17,9 @@ import (
 const (
 	supportMinGoVer = uint64(26)
 	DS              = string(filepath.Separator)
-	AppPath         = "internal/"
+	AppPath         = "app/"
 	ConfPath        = "src/config/"
-	InstallPath     = "internal/admin/command/install/"
+	InstallPath     = "app/admin/command/install/"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gota/internal/admin/command"
+	"gota/app/admin/command"
 	"gota/src"
 	"log"
 	"net/http"

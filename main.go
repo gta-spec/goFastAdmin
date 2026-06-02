@@ -5,8 +5,8 @@ package main
 
 import (
 	"fmt"
-	_ "gota/internal/api/controller"
-	_ "gota/internal/index/controller"
+	_ "gota/app/api/controller"
+	_ "gota/app/index/controller"
 	"gota/src"
 	"gota/src/app"
 	_ "gota/src/app/autoload"
@@ -58,6 +58,7 @@ func main() {
 			continue
 		}
 		file, err := fs.Open(filename)
+
 		if err != nil {
 			fmt.Printf("打开文件失败 %s: %v\n", filename, err)
 			continue
@@ -68,8 +69,16 @@ func main() {
 			fmt.Println(err)
 		}
 		ast.ParseFile()
+		for _, object := range ast.StructTypes {
+			fmt.Println("结构体:" + object.Name)
+			for _, method := range object.FuncDecls {
+				fmt.Println("方法:" + method.Receiver)
+			}
+			fmt.Println("*******************************")
+		}
 	}
-	//out.WriteString(`package internal`)
+	return
+	//out.WriteString(`package app`)
 	//if mainPath != "" {
 	//	return
 	//}

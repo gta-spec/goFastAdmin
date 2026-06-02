@@ -63,7 +63,7 @@ package tools
 //		//	continue
 //		//}
 //	}
-//	out.WriteString(`package internal`)
+//	out.WriteString(`package app`)
 //}
 //
 //var (
@@ -225,7 +225,7 @@ package tools
 //	// 遍历 AST 节点
 //	ast.Inspect(file, func(n ast.Node) bool {
 //		switch x := n.(type) {
-//		case *ast.File:
+//		case *ast.Ast:
 //			// 解析文件级别的注释（全局配置）
 //			if x.Doc != nil {
 //				p.parseGlobalAnnotations(x.Doc.Text())

@@ -20,7 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 
-	"gota/internal"
+	"gota/app"
 )
 
 type App struct {
@@ -62,7 +62,7 @@ func (t *App) Run(addr ...string) {
 
 	render := multi.New(gin.IsDebugging())
 
-	render.LoadHTMLGlob(os.DirFS("./internal"), "**/*.{html,tpl}")
+	render.LoadHTMLGlob(os.DirFS("./app"), "**/*.{html,tpl}")
 	render.LoadHTMLFile(t.Config.DispatchSuccessTmpl)
 	render.LoadHTMLFile(t.Config.DispatchErrorTmpl)
 
@@ -88,7 +88,7 @@ func (t *App) Run(addr ...string) {
 		c.File(filePath)
 	})
 
-	internal.Router(t.Engine)
+	app.Router(t.Engine)
 
 	//设置路由
 	//router(t.Engine)
