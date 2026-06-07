@@ -10,17 +10,13 @@ import (
 	"gota/src"
 	"gota/src/app"
 	_ "gota/src/app/autoload"
-	"gota/src/cmd/tools"
+	"gota/src/cmd/router"
 	"gota/src/config"
 	"gota/src/database"
 	"gota/src/database/redis"
 	_ "gota/src/i18n"
 	"gota/src/logger"
-	"os"
-	"path/filepath"
 	"strings"
-
-	"github.com/bmatcuk/doublestar/v4"
 )
 
 // @title OpenAPI
@@ -36,7 +32,6 @@ import (
 // @name Authorization
 // @description API 认证方式：在请求头中添加 Authorization 字段，值为 Bearer + 空格 + token
 func main() {
-	root := src.AppPath
 	//mainPath := pkg.MainPath
 	//outFilename := filepath.Join("./", root, "route_gen.go")
 	//out, err := os.Create(outFilename)
@@ -44,38 +39,17 @@ func main() {
 	//	panic(err)
 	//}
 	//defer out.Close()
-
-	fs := os.DirFS(filepath.Join("./", root))
-
-	filenames, err := doublestar.Glob(fs, "*/controller/**.go")
-	//fmt.Println(mainPath)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, filename := range filenames {
-		if filename != "api/controller/Demo.go" {
-			continue
+	s, _ := router.ScanPackages("app")
+	for _, p := range s {
+		//fmt.Println(p.Path)
+		ast := router.NewFileAst(p.Path)
+		for _, i2 := range p.Files {
+			_ = ast.ParseFile(i2)
 		}
-		file, err := fs.Open(filename)
-
-		if err != nil {
-			fmt.Printf("打开文件失败 %s: %v\n", filename, err)
-			continue
+		for _, structType := range ast.StructTypes {
+			fmt.Println(structType.Docs)
 		}
-
-		ast, err := tools.NewFileAst(filename, file)
-		if err != nil {
-			fmt.Println(err)
-		}
-		ast.ParseFile()
-		for _, object := range ast.StructTypes {
-			fmt.Println("结构体:" + object.Name)
-			for _, method := range object.FuncDecls {
-				fmt.Println("方法:" + method.Receiver)
-			}
-			fmt.Println("*******************************")
-		}
+		//fmt.Println("*************")
 	}
 	return
 	//out.WriteString(`package app`)

@@ -1,12 +1,12 @@
-package tools
+package router
 
 import (
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -15,16 +15,17 @@ var (
 )
 
 type Ast struct {
+	Path        string
 	Package     string
-	Imports     []*ImportSpec
-	File        *ast.File
+	Imports     map[string]*ImportSpec
 	StructTypes []*StructType
 	FuncDecl    []*FuncDecl
 }
 
 type ImportSpec struct {
-	Name *ast.Ident
-	Path *ast.BasicLit
+	Name string
+	Path string
+	Spec *ast.ImportSpec
 }
 
 type StructType struct {
@@ -47,7 +48,8 @@ type FuncDecl struct {
 	Name     string
 	Docs     string
 	Receiver string
-	FuncDecl *ast.FuncDecl
+	Params   map[string]*ast.Field
+	Results  map[int]*ast.Field
 }
 
 func NewFuncDecl(nodeType *ast.FuncDecl) (*FuncDecl, error) {
@@ -58,6 +60,7 @@ func NewFuncDecl(nodeType *ast.FuncDecl) (*FuncDecl, error) {
 		Name: nodeType.Name.Name,
 		Docs: nodeType.Doc.Text(),
 	}
+
 	if nodeType.Recv != nil && len(nodeType.Recv.List) > 0 {
 		recv := nodeType.Recv.List[0]
 		switch t := recv.Type.(type) {
@@ -68,39 +71,65 @@ func NewFuncDecl(nodeType *ast.FuncDecl) (*FuncDecl, error) {
 				method.Receiver = "*" + ident.Name
 			}
 		}
-		method.FuncDecl = nodeType
+	}
+
+	if nodeType.Type.Params != nil {
+		method.Params = make(map[string]*ast.Field, len(nodeType.Type.Params.List))
+		for _, field := range nodeType.Type.Params.List {
+			for _, name := range field.Names {
+				method.Params[name.Name] = field
+			}
+		}
+	}
+
+	if nodeType.Type.Results != nil {
+		method.Results = make(map[int]*ast.Field, len(nodeType.Type.Results.List))
+		for i, field := range nodeType.Type.Results.List {
+			method.Results[i] = field
+		}
 	}
 	return method, nil
 }
 
 // NewFileAst 解析单个 Go 文件
-func NewFileAst(filename string, src io.Reader) (*Ast, error) {
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
-	if err != nil {
-		return nil, fmt.Errorf("解析文件 %s 失败: %w", filename, err)
-	}
+func NewFileAst(path string) *Ast {
 	return &Ast{
-		Package: file.Name.Name,
-		File:    file,
-	}, nil
+		Path:    path,
+		Imports: make(map[string]*ImportSpec),
+	}
 }
 
-func NewPackageAst(dir string) {
+func (p *Ast) ParseFile(filename string) error {
+	file, err := parser.ParseFile(token.NewFileSet(), filename, nil, parser.ParseComments)
+	if err != nil {
+		return err
+	}
+	if p.Package == "" {
+		p.Package = file.Name.Name
+	}
 
-}
+	for _, imp := range file.Imports {
+		path := strings.Trim(imp.Path.Value, `"`)
+		var name string
+		if imp.Name != nil {
+			name = imp.Name.Name
+		} else {
+			parts := strings.Split(path, "/")
+			name = parts[len(parts)-1]
+		}
 
-func (p *Ast) ParseFile() {
+		p.Imports[name] = &ImportSpec{
+			Name: name,
+			Path: path,
+			Spec: imp,
+		}
+	}
+
 	var methods []*FuncDecl
 	structMap := make(map[string]string)
 
-	ast.Inspect(p.File, func(n ast.Node) bool {
+	ast.Inspect(file, func(n ast.Node) bool {
 		switch nodeType := n.(type) {
-		case *ast.ImportSpec:
-			p.Imports = append(p.Imports, &ImportSpec{
-				Name: nodeType.Name,
-				Path: nodeType.Path,
-			})
 		case *ast.GenDecl:
 			if nodeType.Tok == token.TYPE {
 				for _, spec := range nodeType.Specs {
@@ -153,4 +182,5 @@ func (p *Ast) ParseFile() {
 	}
 
 	p.FuncDecl = append(p.FuncDecl, methods...)
+	return nil
 }
